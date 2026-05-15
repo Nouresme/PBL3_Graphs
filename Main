@@ -1,1 +1,295 @@
+"""
+Transport Network Routing System
+ESME Project - Paris / Bordeaux / Lille / Lyon networks
+
+Implements:
+  1. Data loading from JSON → weighted graph (adjacency list)
+  2. BFS & DFS graph traversal
+  3. Dijkstra's algorithm with transfer-time support
+"""
+
+import json
+import heapq
+from collections import defaultdict, deque
+
+# 1. DATA LOADING
+
+class TransportNetwork:
+    #Weighted directed graph representing a multi-line transport network.
+
+    def __init__(self):
+        # adjacency_list[station] = [(neighbor, travel_time_seconds, line), ...]
+        self.adjacency_list: dict[str, list[tuple[str, int, str]]] = defaultdict(list)
+        self.lines: dict[str, dict] = {}
+        self.transfers: dict[str, dict] = {}   # station → {lines, transfer_time}
+        self.all_stations: set[str] = set()
+
+    # Json loader
+
+    def load_from_json(self, filepath: str) -> None:
+        #read network data from a JSON file and build the weighted graph.
+        with open(filepath, encoding="utf-8") as f:
+            data = json.load(f)
+
+        # store line metadata
+        self.lines = data.get("lines", {})
+
+        # collect all station names from line definitions
+        for line_id, line_info in self.lines.items():
+            for station in line_info.get("stations", []):
+                self.all_stations.add(station)
+
+        # build directed (bidirectional) edges from connections list
+        for conn in data.get("connections", []):
+            src   = conn["from"]
+            dst   = conn["to"]
+            t     = conn["time"]   # seconds
+            line  = conn["line"]
+            self.all_stations.update([src, dst])
+            # Add both directions (undirected network)
+            self.adjacency_list[src].append((dst, t, line))
+            self.adjacency_list[dst].append((src, t, line))
+
+        # store transfer information
+        for transfer in data.get("transfers", []):
+            station = transfer["station"]
+            self.transfers[station] = {
+                "lines": transfer["lines"],
+                "transfer_time": transfer.get("transfer_time", 120)
+            }
+
+        print(f"[✓] Network loaded: {len(self.all_stations)} stations, "
+              f"{len(self.lines)} lines, {len(self.transfers)} transfer stations.")
+
+    # Display helpers
+
+    def print_summary(self) -> None:
+        print("\n── Network Summary ─────────────────────────────────────────")
+        for line_id, info in self.lines.items():
+            color = info.get("color", "N/A")
+            n     = len(info.get("stations", []))
+            print(f"  [{line_id}] {info['name']}  color={color}  stations={n}")
+
+        print(f"\n  Transfer stations ({len(self.transfers)}):")
+        for st, info in self.transfers.items():
+            lines = ", ".join(info["lines"])
+            print(f"    • {st}  → lines: {lines}  ({info['transfer_time']}s transfer)")
+        print("─────────────────────────────────────────────────────────────\n")
+
+    def get_neighbors(self, station: str) -> list[tuple[str, int, str]]:
+        return self.adjacency_list.get(station, [])
+
+# 2. GRAPH TRAVERSAL
+
+def bfs(network: TransportNetwork, start: str) -> dict[str, str | None]:
+    """
+    Breadth-First Search from *start*.
+    Returns a predecessor map {station: came_from}.
+    Finds the path with the fewest stops (ignores weights).
+    """
+    if start not in network.all_stations:
+        raise ValueError(f"Station '{start}' not found in network.")
+
+    visited    = {start}
+    predecessors: dict[str, str | None] = {start: None}
+    queue      = deque([start])
+
+    while queue:
+        current = queue.popleft()
+        for neighbor, _time, _line in network.get_neighbors(current):
+            if neighbor not in visited:
+                visited.add(neighbor)
+                predecessors[neighbor] = current
+                queue.append(neighbor)
+
+    return predecessors
+
+
+def dfs(network: TransportNetwork, start: str) -> dict[str, str | None]:
+    """
+    Depth-First Search from *start*.
+    Returns a predecessor map {station: came_from}.
+    Explores the graph depth-first.
+    """
+    if start not in network.all_stations:
+        raise ValueError(f"Station '{start}' not found in network.")
+
+    visited: set[str] = set()
+    predecessors: dict[str, str | None] = {start: None}
+    stack = [start]
+
+    while stack:
+        current = stack.pop()
+        if current in visited:
+            continue
+        visited.add(current)
+        for neighbor, _time, _line in network.get_neighbors(current):
+            if neighbor not in visited:
+                if neighbor not in predecessors:
+                    predecessors[neighbor] = current
+                stack.append(neighbor)
+
+    return predecessors
+
+
+def reconstruct_path(predecessors: dict, destination: str) -> list[str] | None:
+    """Reconstruct a station list from the predecessor map."""
+    if destination not in predecessors:
+        return None
+    path = []
+    node: str | None = destination
+    while node is not None:
+        path.append(node)
+        node = predecessors[node]
+    path.reverse()
+    return path
+
+
+def check_full_connectivity(network: TransportNetwork) -> bool:
+    """Verify all stations are reachable from any single station (BFS from first)."""
+    if not network.all_stations:
+        return True
+    start       = next(iter(network.all_stations))
+    predecessors = bfs(network, start)
+    reachable   = set(predecessors.keys())
+    unreachable = network.all_stations - reachable
+    if unreachable:
+        print(f"[!] {len(unreachable)} unreachable station(s) from '{start}':")
+        for s in sorted(unreachable)[:10]:
+            print(f"     • {s}")
+        return False
+    print(f"[✓] All {len(network.all_stations)} stations are reachable from '{start}'.")
+    return True
+
+# 3. DIJKSTRA – BEST ROUTE (minimum travel time + transfers)
+
+TRANSFER_PENALTY = 120  # seconds (can be overridden per station)
+
+
+def dijkstra(
+    network: TransportNetwork,
+    origin: str,
+    destination: str,
+) -> dict | None:
+    """
+    Dijkstra's algorithm on the weighted graph.
+    State = (station, current_line) so that changing lines adds transfer time.
+
+    Returns a dict with:
+        total_time   – total travel time in seconds
+        path         – ordered list of (station, line) tuples
+        transfers    – list of stations where a line change occurred
+    or None if no path exists.
+    """
+    if origin not in network.all_stations:
+        raise ValueError(f"Origin '{origin}' not found.")
+    if destination not in network.all_stations:
+        raise ValueError(f"Destination '{destination}' not found.")
+
+    # dist[(station, line)] = best known time
+    INF  = float("inf")
+    dist: dict[tuple[str, str], float] = defaultdict(lambda: INF)
+
+    # Priority queue: (cost, station, line, path_so_far)
+    # We seed with all lines serving the origin station (cost 0, no boarding fee)
+    start_lines = {line for _, _, line in network.get_neighbors(origin)}
+    if not start_lines:
+        start_lines = {""}
+
+    heap: list[tuple[float, str, str, list[tuple[str, str]]]] = []
+    for line in start_lines:
+        dist[(origin, line)] = 0
+        heapq.heappush(heap, (0, origin, line, [(origin, line)]))
+
+    while heap:
+        cost, station, cur_line, path = heapq.heappop(heap)
+
+        # Early exit
+        if station == destination:
+            return _build_result(cost, path, network)
+
+        # Skip stale entries
+        if cost > dist[(station, cur_line)]:
+            continue
+
+        for neighbor, travel_time, edge_line in network.get_neighbors(station):
+            # Transfer penalty when changing lines at a transfer station
+            if edge_line != cur_line and cur_line != "":
+                t_info  = network.transfers.get(station, {})
+                penalty = t_info.get("transfer_time", TRANSFER_PENALTY)
+            else:
+                penalty = 0
+
+            new_cost = cost + travel_time + penalty
+
+            if new_cost < dist[(neighbor, edge_line)]:
+                dist[(neighbor, edge_line)] = new_cost
+                heapq.heappush(
+                    heap,
+                    (new_cost, neighbor, edge_line, path + [(neighbor, edge_line)])
+                )
+
+    return None  # No path found
+
+
+def _build_result(
+    total_time: float,
+    path: list[tuple[str, str]],
+    network: TransportNetwork,
+) -> dict:
+    """Build a human-readable result dict from raw Dijkstra output."""
+    transfers_made = []
+    prev_line = path[0][1] if path else ""
+
+    for station, line in path[1:]:
+        if line != prev_line and prev_line != "":
+            transfers_made.append(station)
+        prev_line = line
+
+    return {
+        "total_time": int(total_time),
+        "path": path,
+        "transfers": transfers_made,
+    }
+
+
+def format_route(result: dict) -> str:
+    """Pretty-print a Dijkstra result in the required readable format."""
+    if result is None:
+        return "No route found."
+
+    lines_out = []
+    path      = result["path"]
+    transfers = set(result["transfers"])
+
+    lines_out.append("═" * 60)
+    lines_out.append("  ITINERARY")
+    lines_out.append("═" * 60)
+
+    # Boarding
+    board_station, board_line = path[0]
+    lines_out.append(f"  🚉 Board at    : {board_station}  [{board_line}]")
+    lines_out.append("")
+
+    prev_line = board_line
+    for station, line in path[1:]:
+        if station in transfers:
+            lines_out.append(f"  🔄 Transfer at  : {station}  [{prev_line}] → [{line}]  (+{TRANSFER_PENALTY}s)")
+        else:
+            lines_out.append(f"  ➜  {station}  [{line}]")
+        prev_line = line
+
+    # Alighting
+    alight_station, alight_line = path[-1]
+    lines_out.append("")
+    lines_out.append(f"  🏁 Alight at   : {alight_station}  [{alight_line}]")
+    lines_out.append("")
+
+    mins, secs = divmod(result["total_time"], 60)
+    lines_out.append(f"  ⏱  Total time  : {mins}m {secs:02d}s  ({result['total_time']}s)")
+    lines_out.append(f"  🔄 Transfers   : {len(result['transfers'])}")
+    lines_out.append("═" * 60)
+
+    return "\n".join(lines_out)
+
 
