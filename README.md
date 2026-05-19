@@ -7,14 +7,14 @@ MVP Status: [Final product]
 # **🎯 Project Overview**
 *Provide a concise (2-3 sentence) description of what your application does and the specific problem it solves. Why did you build this?*
 
-This product is an online bidding platform where the auction is inverted: the winner is not the highest bidder, but the person who proposes the lowest price and is the only one proposing that price! This innovating way of viewing auctions would represent an investissement sure to bring back its worth ten times. 
+This product is an online 
 
 # **🚀 Quick Start (Architect Level: < 60s Setup)**
 
 *Instructions on how to get this project running on a fresh machine.*
 
 First, check for any python updates you need to make, and that it suppports PyQt5. 
-Then download the "Main.py", "interface visal.py" and "transport.py" files , and open them in your coding app, for example VScode and run it. 
+Then download the "Main.py", "interface visal.py" and "transport.py" files  into the same folder, and open them in your coding app, for example VScode and run it. 
 
 # **🛠️ Technical Architecture**
 *Explain how your code is organized. An "Architect-level" README should describe the separation of concerns.*
