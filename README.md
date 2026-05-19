@@ -21,7 +21,7 @@ Then download the "Main.py", "interface visal.py" and "transport.py" files  into
 the cpode is separated into 3 linked files:
   main.py: creates the main window and deals with most base functions for the algorithm to run 
   
-  interface visual: 
+  interface visual: deals with the visual interface (colors etc) 
   
   transport: 
 
