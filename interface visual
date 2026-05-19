@@ -1,0 +1,138 @@
+BG       = "#F7F7F8"
+SURFACE  = "#FFFFFF"
+BORDER   = "#E5E5E7"
+PRIMARY  = "#1C1C1E"
+ACCENT   = "#0A84FF"
+MUTED    = "#8E8E93"
+SUCCESS  = "#34C759"
+WARNING  = "#FF9500"
+ERROR    = "#FF3B30"
+STEP_BG  = "#F2F2F7"
+
+STYLESHEET = f"""
+QMainWindow, QWidget#root {{
+    background: {BG};
+}}
+QLabel#heading {{
+    color: {PRIMARY};
+    font-size: 22px;
+    font-weight: 700;
+}}
+QLabel#sub {{
+    color: {MUTED};
+    font-size: 13px;
+}}
+QLabel#fieldLabel {{
+    color: {PRIMARY};
+    font-size: 13px;
+    font-weight: 600;
+}}
+QComboBox {{
+    background: {SURFACE};
+    border: 1.5px solid {BORDER};
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 14px;
+    color: {PRIMARY};
+    min-height: 36px;
+}}
+QComboBox:focus {{
+    border-color: {ACCENT};
+}}
+QComboBox::drop-down {{
+    border: none;
+    width: 28px;
+}}
+QComboBox::down-arrow {{
+    image: none;
+    width: 0;
+}}
+QComboBox QAbstractItemView {{
+    background: {SURFACE};
+    border: 1.5px solid {BORDER};
+    border-radius: 8px;
+    selection-background-color: #E8F0FE;
+    selection-color: {PRIMARY};
+    padding: 4px;
+    font-size: 13px;
+}}
+QPushButton#searchBtn {{
+    background: {ACCENT};
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 0;
+    font-size: 15px;
+    font-weight: 600;
+}}
+QPushButton#searchBtn:hover {{
+    background: #0070E0;
+}}
+QPushButton#searchBtn:pressed {{
+    background: #005BC4;
+}}
+QPushButton#searchBtn:disabled {{
+    background: {BORDER};
+    color: {MUTED};
+}}
+QPushButton#swapBtn {{
+    background: {SURFACE};
+    border: 1.5px solid {BORDER};
+    border-radius: 8px;
+    color: {MUTED};
+    font-size: 18px;
+    padding: 4px 10px;
+}}
+QPushButton#swapBtn:hover {{
+    border-color: {ACCENT};
+    color: {ACCENT};
+}}
+QScrollArea {{
+    background: transparent;
+    border: none;
+}}
+QFrame#card {{
+    background: {SURFACE};
+    border: 1.5px solid {BORDER};
+    border-radius: 14px;
+}}
+QFrame#resultHeader {{
+    background: {ACCENT};
+    border-radius: 10px;
+}}
+QLabel#resultTime {{
+    color: white;
+    font-size: 20px;
+    font-weight: 700;
+}}
+QLabel#resultSub {{
+    color: rgba(255,255,255,0.82);
+    font-size: 12px;
+}}
+QLabel#stepStation {{
+    color: {PRIMARY};
+    font-size: 13px;
+    font-weight: 500;
+}}
+QLabel#stepLine {{
+    color: {MUTED};
+    font-size: 12px;
+}}
+QLabel#transferBadge {{
+    color: {WARNING};
+    background: #FFF3E0;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+}}
+QLabel#errorMsg {{
+    color: {ERROR};
+    font-size: 13px;
+    font-weight: 500;
+}}
+QLabel#emptyHint {{
+    color: {MUTED};
+    font-size: 13px;
+}}
+"""
