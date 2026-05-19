@@ -19,7 +19,7 @@ Then download the "Main.py", "interface visal.py" and "transport.py" files , and
 # **🛠️ Technical Architecture**
 *Explain how your code is organized. An "Architect-level" README should describe the separation of concerns.*
 
-  main.py: 
+  main.py: creates the main window and deals with most base functions for the algorithm to run 
   interface visual: 
   transport: 
 
