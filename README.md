@@ -1,4 +1,4 @@
-# **PBL2_bidding📦**
+# **PBL3_bidding📦**
 [Mini Auction House]
 MVP Status: [Final product]
 
