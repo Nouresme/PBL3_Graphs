@@ -1,4 +1,4 @@
-# **PBL3_bidding📦**
+# **PBL3_graph📦**
 [Mini Auction House]
 MVP Status: [Final product]
 
@@ -18,9 +18,11 @@ Then download the "Main.py", "interface visal.py" and "transport.py" files , and
 
 # **🛠️ Technical Architecture**
 *Explain how your code is organized. An "Architect-level" README should describe the separation of concerns.*
-
+the cpode is separated into 3 linked files:
   main.py: creates the main window and deals with most base functions for the algorithm to run 
+  
   interface visual: 
+  
   transport: 
 
 # **🧪 Testing & Validation**
