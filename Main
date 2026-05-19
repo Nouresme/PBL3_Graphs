@@ -15,155 +15,14 @@ from PyQt5.QtGui import QFont, QColor, QPalette, QIcon
 
 from transport import TransportNetwork, dijkstra
 
-# ── Paths ──────────────────────────────────────────────────────────────────────
+# PATHS
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
-# ── Colour palette ─────────────────────────────────────────────────────────────
-BG       = "#F7F7F8"
-SURFACE  = "#FFFFFF"
-BORDER   = "#E5E5E7"
-PRIMARY  = "#1C1C1E"
-ACCENT   = "#0A84FF"
-MUTED    = "#8E8E93"
-SUCCESS  = "#34C759"
-WARNING  = "#FF9500"
-ERROR    = "#FF3B30"
-STEP_BG  = "#F2F2F7"
-
-STYLESHEET = f"""
-QMainWindow, QWidget#root {{
-    background: {BG};
-}}
-QLabel#heading {{
-    color: {PRIMARY};
-    font-size: 22px;
-    font-weight: 700;
-}}
-QLabel#sub {{
-    color: {MUTED};
-    font-size: 13px;
-}}
-QLabel#fieldLabel {{
-    color: {PRIMARY};
-    font-size: 13px;
-    font-weight: 600;
-}}
-QComboBox {{
-    background: {SURFACE};
-    border: 1.5px solid {BORDER};
-    border-radius: 10px;
-    padding: 8px 14px;
-    font-size: 14px;
-    color: {PRIMARY};
-    min-height: 36px;
-}}
-QComboBox:focus {{
-    border-color: {ACCENT};
-}}
-QComboBox::drop-down {{
-    border: none;
-    width: 28px;
-}}
-QComboBox::down-arrow {{
-    image: none;
-    width: 0;
-}}
-QComboBox QAbstractItemView {{
-    background: {SURFACE};
-    border: 1.5px solid {BORDER};
-    border-radius: 8px;
-    selection-background-color: #E8F0FE;
-    selection-color: {PRIMARY};
-    padding: 4px;
-    font-size: 13px;
-}}
-QPushButton#searchBtn {{
-    background: {ACCENT};
-    color: white;
-    border: none;
-    border-radius: 12px;
-    padding: 12px 0;
-    font-size: 15px;
-    font-weight: 600;
-}}
-QPushButton#searchBtn:hover {{
-    background: #0070E0;
-}}
-QPushButton#searchBtn:pressed {{
-    background: #005BC4;
-}}
-QPushButton#searchBtn:disabled {{
-    background: {BORDER};
-    color: {MUTED};
-}}
-QPushButton#swapBtn {{
-    background: {SURFACE};
-    border: 1.5px solid {BORDER};
-    border-radius: 8px;
-    color: {MUTED};
-    font-size: 18px;
-    padding: 4px 10px;
-}}
-QPushButton#swapBtn:hover {{
-    border-color: {ACCENT};
-    color: {ACCENT};
-}}
-QScrollArea {{
-    background: transparent;
-    border: none;
-}}
-QFrame#card {{
-    background: {SURFACE};
-    border: 1.5px solid {BORDER};
-    border-radius: 14px;
-}}
-QFrame#resultHeader {{
-    background: {ACCENT};
-    border-radius: 10px;
-}}
-QLabel#resultTime {{
-    color: white;
-    font-size: 20px;
-    font-weight: 700;
-}}
-QLabel#resultSub {{
-    color: rgba(255,255,255,0.82);
-    font-size: 12px;
-}}
-QLabel#stepStation {{
-    color: {PRIMARY};
-    font-size: 13px;
-    font-weight: 500;
-}}
-QLabel#stepLine {{
-    color: {MUTED};
-    font-size: 12px;
-}}
-QLabel#transferBadge {{
-    color: {WARNING};
-    background: #FFF3E0;
-    border-radius: 6px;
-    padding: 2px 8px;
-    font-size: 11px;
-    font-weight: 600;
-}}
-QLabel#errorMsg {{
-    color: {ERROR};
-    font-size: 13px;
-    font-weight: 500;
-}}
-QLabel#emptyHint {{
-    color: {MUTED};
-    font-size: 13px;
-}}
-"""
-
-
-# ── Worker thread ──────────────────────────────────────────────────────────────
+# WORKER THREADS
 
 class RouteWorker(QThread):
-    done = pyqtSignal(object)  # result dict or None
+    done = pyqtSignal(object)  #result dict or None
     error = pyqtSignal(str)
 
     def __init__(self, network, origin, destination):
@@ -180,19 +39,18 @@ class RouteWorker(QThread):
             self.error.emit(str(e))
 
 
-# ── Main window ────────────────────────────────────────────────────────────────
-
+# MAIN WINDOW
 class TransportApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.network = TransportNetwork()
-        self.cities: dict[str, str] = {}  # name → filepath
+        self.cities: dict[str, str] = {}  #name → filepath
         self._worker = None
         self._discover_cities()
         self._build_ui()
         self._load_city(list(self.cities.keys())[0])
 
-    # ── Discovery ──────────────────────────────────────────────────────────────
+    #DISCOVERY
 
     def _discover_cities(self):
         if not os.path.isdir(DATA_DIR):
@@ -202,7 +60,7 @@ class TransportApp(QMainWindow):
                 name = fn[:-5].replace("_", " ").capitalize()
                 self.cities[name] = os.path.join(DATA_DIR, fn)
 
-    # ── UI construction ────────────────────────────────────────────────────────
+    # UI CONSTRUCTION
 
     def _build_ui(self):
         self.setWindowTitle("Transport Route Planner")
@@ -218,7 +76,7 @@ class TransportApp(QMainWindow):
         outer.setContentsMargins(24, 28, 24, 24)
         outer.setSpacing(0)
 
-        # ── Header ─────────────────────────────────────────────────────────────
+        # HEADER
         heading = QLabel("🚇 Route Planner")
         heading.setObjectName("heading")
         sub = QLabel("Find the fastest path in your city's network")
@@ -228,14 +86,14 @@ class TransportApp(QMainWindow):
         outer.addWidget(sub)
         outer.addSpacing(22)
 
-        # ── Search card ────────────────────────────────────────────────────────
+        # SEARCH CARD
         card = QFrame()
         card.setObjectName("card")
         card_layout = QVBoxLayout(card)
         card_layout.setContentsMargins(18, 18, 18, 18)
         card_layout.setSpacing(14)
 
-        # City
+        # CITY
         city_label = QLabel("City")
         city_label.setObjectName("fieldLabel")
         self.city_combo = QComboBox()
@@ -244,13 +102,13 @@ class TransportApp(QMainWindow):
         card_layout.addWidget(city_label)
         card_layout.addWidget(self.city_combo)
 
-        # Separator
+        # SEPARATOR
         sep = QFrame()
         sep.setFrameShape(QFrame.HLine)
         sep.setStyleSheet(f"color: {BORDER};")
         card_layout.addWidget(sep)
 
-        # Origin
+        # ORIGIN
         origin_label = QLabel("From")
         origin_label.setObjectName("fieldLabel")
         self.origin_combo = QComboBox()
@@ -261,7 +119,7 @@ class TransportApp(QMainWindow):
         card_layout.addWidget(origin_label)
         card_layout.addWidget(self.origin_combo)
 
-        # Swap button
+        # SWAP BUTTON
         swap_row = QHBoxLayout()
         swap_row.addStretch()
         self.swap_btn = QPushButton("⇅")
@@ -273,7 +131,7 @@ class TransportApp(QMainWindow):
         swap_row.addStretch()
         card_layout.addLayout(swap_row)
 
-        # Destination
+        # DESTINATION
         dest_label = QLabel("To")
         dest_label.setObjectName("fieldLabel")
         self.dest_combo = QComboBox()
@@ -284,7 +142,7 @@ class TransportApp(QMainWindow):
         card_layout.addWidget(dest_label)
         card_layout.addWidget(self.dest_combo)
 
-        # Search button
+        # SEARCH BUTTON
         self.search_btn = QPushButton("Find Route")
         self.search_btn.setObjectName("searchBtn")
         self.search_btn.clicked.connect(self._search)
@@ -294,7 +152,7 @@ class TransportApp(QMainWindow):
         outer.addWidget(card)
         outer.addSpacing(18)
 
-        # ── Results area ───────────────────────────────────────────────────────
+        # RESULTS AREA
         self.result_scroll = QScrollArea()
         self.result_scroll.setWidgetResizable(True)
         self.result_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -311,7 +169,7 @@ class TransportApp(QMainWindow):
         self.result_scroll.setWidget(self.result_container)
         outer.addWidget(self.result_scroll, 1)
 
-    # ── City loading ───────────────────────────────────────────────────────────
+    # CITY LOADING
 
     def _on_city_changed(self, name):
         self._load_city(name)
@@ -334,7 +192,7 @@ class TransportApp(QMainWindow):
         self._clear_results()
         self._show_empty_hint()
 
-    # ── Swap ───────────────────────────────────────────────────────────────────
+    # SWAP
 
     def _swap_stations(self):
         a = self.origin_combo.currentText()
@@ -342,7 +200,7 @@ class TransportApp(QMainWindow):
         self.origin_combo.setCurrentText(b)
         self.dest_combo.setCurrentText(a)
 
-    # ── Search ─────────────────────────────────────────────────────────────────
+    # SEARCH
 
     def _search(self):
         origin = self.origin_combo.currentText().strip()
@@ -386,7 +244,7 @@ class TransportApp(QMainWindow):
         self._clear_results()
         self._show_error(msg)
 
-    # ── Result rendering ───────────────────────────────────────────────────────
+    # RESULT RENDERING
 
     def _clear_results(self):
         while self.result_layout.count():
@@ -415,7 +273,7 @@ class TransportApp(QMainWindow):
         mins, secs = divmod(total_sec, 60)
         n_transfers = len(result["transfers"])
 
-        # ── Summary header ─────────────────────────────────────────────────────
+        # SUMMARY HEADER
         header = QFrame()
         header.setObjectName("resultHeader")
         h_layout = QHBoxLayout(header)
@@ -443,7 +301,7 @@ class TransportApp(QMainWindow):
         self.result_layout.addWidget(header)
         self.result_layout.addSpacing(10)
 
-        # ── Steps ──────────────────────────────────────────────────────────────
+        # STEPS
         steps_card = QFrame()
         steps_card.setObjectName("card")
         steps_layout = QVBoxLayout(steps_card)
@@ -497,7 +355,7 @@ class TransportApp(QMainWindow):
 
             steps_layout.addLayout(row)
 
-            # Divider (not after last)
+            # divider (not after last)
             if not is_last:
                 div = QFrame()
                 div.setFrameShape(QFrame.HLine)
@@ -508,7 +366,7 @@ class TransportApp(QMainWindow):
         self.result_layout.addStretch()
 
 
-# ── Entry point ────────────────────────────────────────────────────────────────
+# ENTRY POINT
 
 def main():
     app = QApplication(sys.argv)
