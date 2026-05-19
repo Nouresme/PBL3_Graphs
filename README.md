@@ -13,7 +13,7 @@ This product is an online bidding platform where the auction is inverted: the wi
 
 *Instructions on how to get this project running on a fresh machine.*
 
-First, check for any python updates you need need to make, and that it suppports PyQt5. 
+First, check for any python updates you need to make, and that it suppports PyQt5. 
 Then download the "Main.py" file, and open it in your coding app, for example VScode and run it. 
 
 # **🛠️ Technical Architecture**
