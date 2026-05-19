@@ -1,0 +1,135 @@
+"""
+Transport Network Routing System
+ESME Project - Paris / Bordeaux / Lille / Lyon networks
+"""
+
+import json
+import heapq
+from collections import defaultdict, deque
+
+
+class TransportNetwork:
+    def __init__(self):
+        self.adjacency_list: dict = defaultdict(list)
+        self.lines: dict = {}
+        self.transfers: dict = {}
+        self.all_stations: set = set()
+
+    def load_from_json(self, filepath: str) -> None:
+        with open(filepath, encoding="utf-8") as f:
+            data = json.load(f)
+
+        self.adjacency_list = defaultdict(list)
+        self.lines = {}
+        self.transfers = {}
+        self.all_stations = set()
+
+        self.lines = data.get("lines") or data.get("lignes", {})
+        default_time = data.get("temps_moyen") or data.get("average_time", 90)
+
+        for line_id, line_info in self.lines.items():
+            for station in line_info.get("stations", []):
+                self.all_stations.add(station)
+
+        explicit_connections = data.get("connections") or data.get("connexions", [])
+        added_edges: set = set()
+
+        for conn in explicit_connections:
+            src = conn.get("from") or conn.get("de")
+            dst = conn.get("to") or conn.get("vers")
+            t = conn.get("time") or conn.get("temps", default_time)
+            line = conn.get("line") or conn.get("ligne", "?")
+            if src is None or dst is None:
+                continue
+            self.all_stations.update([src, dst])
+            if (src, dst, line) not in added_edges:
+                self.adjacency_list[src].append((dst, t, line))
+                added_edges.add((src, dst, line))
+            if (dst, src, line) not in added_edges:
+                self.adjacency_list[dst].append((src, t, line))
+                added_edges.add((dst, src, line))
+
+        for line_id, line_info in self.lines.items():
+            stations = line_info.get("stations", [])
+            for i in range(len(stations) - 1):
+                src = stations[i]
+                dst = stations[i + 1]
+                if (src, dst, line_id) not in added_edges:
+                    self.adjacency_list[src].append((dst, default_time, line_id))
+                    added_edges.add((src, dst, line_id))
+                if (dst, src, line_id) not in added_edges:
+                    self.adjacency_list[dst].append((src, default_time, line_id))
+                    added_edges.add((dst, src, line_id))
+
+        transfer_list = data.get("transfers") or data.get("correspondances", [])
+        for transfer in transfer_list:
+            station = transfer["station"]
+            lines = transfer.get("lines") or transfer.get("lignes", [])
+            t_time = transfer.get("transfer_time") or transfer.get("temps", 120)
+            self.transfers[station] = {"lines": lines, "transfer_time": t_time}
+
+    def get_neighbors(self, station: str):
+        return self.adjacency_list.get(station, [])
+
+
+TRANSFER_PENALTY = 120
+
+
+def dijkstra(network: TransportNetwork, origin: str, destination: str):
+    if origin not in network.all_stations:
+        raise ValueError(f"Origin '{origin}' not found.")
+    if destination not in network.all_stations:
+        raise ValueError(f"Destination '{destination}' not found.")
+
+    INF = float("inf")
+    dist: dict = defaultdict(lambda: INF)
+
+    start_lines = {line for _, _, line in network.get_neighbors(origin)}
+    if not start_lines:
+        start_lines = {""}
+
+    heap = []
+    for line in start_lines:
+        dist[(origin, line)] = 0
+        heapq.heappush(heap, (0, origin, line, [(origin, line)]))
+
+    while heap:
+        cost, station, cur_line, path = heapq.heappop(heap)
+
+        if station == destination:
+            return _build_result(cost, path, network)
+
+        if cost > dist[(station, cur_line)]:
+            continue
+
+        for neighbor, travel_time, edge_line in network.get_neighbors(station):
+            if edge_line != cur_line and cur_line != "":
+                t_info = network.transfers.get(station, {})
+                penalty = t_info.get("transfer_time", TRANSFER_PENALTY)
+            else:
+                penalty = 0
+
+            new_cost = cost + travel_time + penalty
+
+            if new_cost < dist[(neighbor, edge_line)]:
+                dist[(neighbor, edge_line)] = new_cost
+                heapq.heappush(heap, (new_cost, neighbor, edge_line, path + [(neighbor, edge_line)]))
+
+    return None
+
+
+def _build_result(total_time, path, network):
+    transfers_made = []
+    prev_line = path[0][1] if path else ""
+    prev_station = path[0][0] if path else ""
+    for station, line in path[1:]:
+        if line != prev_line and prev_line != "":
+            transfers_made.append(prev_station)
+        prev_line = line
+        prev_station = station
+    return {
+        "total_time": int(total_time),
+        "path": path,
+        "transfers": transfers_made,
+    }
+
