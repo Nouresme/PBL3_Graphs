@@ -34,6 +34,7 @@ The cvs files should not pose any problems, and you can try loading them directl
 *List the main third-party libraries used and why they were chosen:*
 
 PyQt: [dealing with the platform windows]
+The algorithm loads the data from the json files into graphs 
 
 # **🔮 Future Roadmap (v2.0)**
 *What features would you add if you had more time or a larger budget?*
