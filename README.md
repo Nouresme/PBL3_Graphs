@@ -7,7 +7,7 @@ MVP Status: [Final product]
 # **🎯 Project Overview**
 *Provide a concise (2-3 sentence) description of what your application does and the specific problem it solves. Why did you build this?*
 
-This product is a remplacement to itinerary apps which calculates the time it takes with the French public transport networks for a journey and then shows you the way to get from one point to another. It supports 4 cities, Paris, Lyon, Bordeaux, and Lille 
+This product is a remplacement to itinerary apps which calculates the time it takes with the French public transport networks for a journey and then shows you the way to get from one point to another. It supports 5 cities, Paris, Lyon, Bordeaux, Lilles and Mini_reseau (imaginary city)
 
 # **🚀 Quick Start (Architect Level: < 60s Setup)**
 
