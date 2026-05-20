@@ -23,7 +23,7 @@ the cpode is separated into 3 linked files:
   
   interface visual: deals with the visual interface (colors etc) 
   
-  transport: bigger functions (djikstra) 
+  transport: bigger functions (dijkstra) 
 
 # **🧪 Testing & Validation**
 *How can a user verify the code works?*
